@@ -1,5 +1,7 @@
 #full dataset analysis
 
+
+
 clim <- clim[year >= 1990 & year <= 2021]
 
 clim_list <- split(clim, list(clim$month, clim$year, clim$locnum), drop = TRUE) #will drop empty months 
@@ -80,6 +82,7 @@ copy1$harvyr <- ifelse(expdata$month == 9 | expdata$month == 10 | expdata$month 
 copy1$TAVG <- (copy1$TMAX+copy1$TMIN)/2
 unique(copy1$harvyr)
 
+# write.csv(copy1, "C:/Users/jmott1/Documents/Climate Effects on Wheat/expdata.csv", row.names=FALSE)
 
 datetest <- copy1
 
@@ -127,12 +130,11 @@ locplantdate$DATE <- as.Date(locplantdate$DATE)
 obsclim <- merge(locplantdate, copy1, by.x = c("DATE", "locnum"), by.y = c("DATE", "locnum")) 
 obsclim$season <- as.factor(obsclim$season)
 obsclim$locnum <- as.numeric(obsclim$locnum)
-str(obsclim)
+
+obsclim <- obsclim[order(obsclim$locnum, obsclim$harvyr, obsclim$season),]
+obsclim <- obsclim[-which(obsclim$season == "summer"),]
 
 #compute summaries for gdd bins by location, year (and season). 
-
-
-obsclim_list <- split(obsclim, list(obsclim$locnum, obsclim$harvyr, obsclim$season), drop = TRUE) 
 
 binCols <- grep("^\\(.*\\)$|^\\[.*\\)$|^\\(.*\\]$|^\\[.*\\]$", names(obsclim))
 
@@ -148,7 +150,7 @@ for(i in unique(obsclim$locnum)){
             for(k in unique(obsclimi$season)){
             # k = "autumm"
                 obsclimijk <- obsclimij[obsclimij$season == k, ]
-                binij <- colSums(obsclimij[binCols])
+                binij <- colSums(obsclimij[binCols], na.rm = TRUE)
                 names(binij) <- paste0(k, "_", names(binij))        
                 sL[[k]] <- binij
             }
@@ -160,7 +162,31 @@ for(i in unique(obsclim$locnum)){
 
 binSummary <-  data.frame(locnum = unique(obsclim$locnum), do.call(rbind, locBinL), check.names = FALSE)
 
-write.csv(binSummary, "C:/Users/jmott1/Documents/Climate Effects on Wheat/binSummary.csv", row.names=FALSE) 
-# write.csv(copy1, "C:/Users/jmott1/Documents/Climate Effects on Wheat/expdata.csv", row.names=FALSE)
+# write.csv(binSummary, "C:/Users/jmott1/Documents/Climate Effects on Wheat/binSummary.csv", row.names=FALSE) 
 
 
+# combine binSummary with yield data
+
+
+wht <- read.csv("C:/Users/jmott1/Documents/Climate Effects on Wheat/whtbyloc.csv", sep = ",", header = TRUE)
+
+wht$locnum <- ifelse(wht$LOC == 'BB', "1",
+            ifelse(wht$LOC == 'BS', "2",
+            ifelse(wht$LOC == 'HO', "3",
+            ifelse(wht$LOC == 'OR', "4",
+            ifelse(wht$LOC == 'PT', "5",
+            ifelse(wht$LOC == 'SV', "6", 
+            ifelse(wht$LOC == 'WR', "7", "8"))))))
+)
+
+
+colnames(wht)[2] <- "loc"
+colnames(wht)[11] <- "harvyr"
+
+wht
+
+
+climYld <- merge(wht, binSummary, by = c("locnum", "harvyr"), sort = TRUE)
+
+
+# write.csv(climYld, "C:/Users/jmott1/Documents/Climate Effects on Wheat/climYld.csv", row.names=FALSE) 
