@@ -1,7 +1,5 @@
 #full dataset analysis
 
-options(max.print=1000)
-
 clim <- clim[year >= 1990 & year <= 2021]
 
 clim_list <- split(clim, list(clim$month, clim$year, clim$locnum), drop = TRUE) #will drop empty months 
